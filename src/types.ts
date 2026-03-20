@@ -60,6 +60,9 @@ export interface LocationSummary {
   rating?: number;
   ratingLabel: string;
   reviewCountLabel: string;
+  reviewsThisWeek: number;
+  reviewsLastWeek: number;
+  unansweredCount: number;
   trend: TrendDirection;
   trendChipLabel?: string;
   trendLabel: string;
@@ -80,6 +83,7 @@ export interface ReviewItem {
   locationId: string;
   author: string;
   stars: number;
+  receivedAt: string;
   dateLabel: string;
   sentiment: ReviewSentiment;
   status: ReviewStatus;
@@ -93,7 +97,9 @@ export interface ThemeCategory {
   locationId: string;
   label: string;
   value: number;
+  previousValue: number;
   tone: ThemeTone;
+  relatedTags: string[];
 }
 
 export interface AutomationMetric {

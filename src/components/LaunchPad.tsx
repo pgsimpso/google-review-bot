@@ -6,31 +6,6 @@ interface LaunchPadProps {
   onToggleMilestone: (milestoneId: string) => void;
 }
 
-function getCountdownLabel(openingDate?: string) {
-  if (!openingDate) {
-    return "Opening window set";
-  }
-
-  const currentDate = new Date();
-  const targetDate = new Date(`${openingDate}T12:00:00`);
-  const diffMs = targetDate.getTime() - currentDate.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays > 1) {
-    return `${diffDays} days to opening`;
-  }
-
-  if (diffDays === 1) {
-    return "1 day to opening";
-  }
-
-  if (diffDays === 0) {
-    return "Opening day";
-  }
-
-  return "Opening window passed";
-}
-
 export function LaunchPad({
   location,
   milestones,
@@ -43,9 +18,8 @@ export function LaunchPad({
   const readinessPercent =
     milestones.length === 0 ? 0 : Math.round((completedCount / milestones.length) * 100);
   const isExternalLink = location.linkUrl.startsWith("http");
-  const timingLabel = location.openingDate
-    ? getCountdownLabel(location.openingDate)
-    : location.ratingLabel;
+  const nextOpenTask =
+    milestones.find((milestone) => !milestone.complete) ?? milestones[0] ?? null;
 
   return (
     <div className="dashboard-shell">
@@ -64,55 +38,56 @@ export function LaunchPad({
         </a>
       </div>
 
-      <div className="workspace-grid launch-workspace-grid">
+      <div className="launch-panel-grid">
         <section className="panel launch-summary-panel">
           <div className="launch-kicker-row">
-            <span className="status-pill status-pending">
-              {location.openingLabel ?? "Launch Queue"}
-            </span>
-            <span className="launch-countdown">{timingLabel}</span>
+            <span className="launch-badge">{location.ratingLabel}</span>
+            <span className="launch-countdown">{readinessPercent}% ready</span>
           </div>
 
-          <h4>Opening-month review runway</h4>
+          <h4>Launch mode keeps the work operational.</h4>
           <p className="launch-intro">
-            Public review count is still at zero. This board tracks what has to be in place before the first reviews start landing.
+            There are no public reviews yet, so this screen stays focused on setup:
+            claim the profile, turn on the request flow, and get the first reply
+            motion ready before opening week.
           </p>
 
           <div className="launch-stat-grid">
             <article className="workspace-highlight-card">
-              <span>Checklist</span>
+              <span>Checklist progress</span>
               <strong>
                 {completedCount} / {milestones.length}
               </strong>
-              <p>Setup tasks already locked before opening week</p>
+              <p>Core launch tasks already completed.</p>
             </article>
             <article className="workspace-highlight-card">
-              <span>Public review count</span>
-              <strong>{location.reviewCountLabel}</strong>
-              <p>Cold-start state before guests begin posting</p>
-            </article>
-            <article className="workspace-highlight-card">
-              <span>First-review goal</span>
+              <span>First-50 goal</span>
               <strong>
                 {progressCurrent} / {progressTarget}
               </strong>
-              <p>Target for the first full month after launch</p>
+              <p>Progress toward the first public proof target.</p>
+            </article>
+            <article className="workspace-highlight-card">
+              <span>Next priority</span>
+              <strong>{nextOpenTask?.label ?? "All set"}</strong>
+              <p>{nextOpenTask?.dueLabel ?? "No open launch task remains."}</p>
             </article>
           </div>
 
           <div className="goal-panel">
             <div className="goal-panel-top">
-              <span>Readiness</span>
-              <strong>{readinessPercent}%</strong>
+              <span>Review runway</span>
+              <strong>{progressCurrent} reviews lined up</strong>
             </div>
             <div className="metric-progress-track">
               <div
                 className="metric-progress-fill"
-                style={{ width: `${readinessPercent}%` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
             <p>
-              The launch queue covers profile setup, outreach timing, and response tone before opening night.
+              The launch goal is a visible march toward 50 public reviews, not a
+              blank placeholder.
             </p>
           </div>
         </section>
@@ -121,9 +96,10 @@ export function LaunchPad({
           <div className="panel-header">
             <div>
               <span className="eyebrow-label">Launch checklist</span>
-              <h4>Opening sequence</h4>
+              <h4>What must be true before opening week</h4>
             </div>
           </div>
+
           <div className="milestone-list">
             {milestones.map((milestone) => (
               <button
