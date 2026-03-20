@@ -33,7 +33,7 @@ export const demoCopy: DemoCopy = {
     },
     {
       label: "Live public reviews",
-      value: "418",
+      value: "2,738",
       detail: "Current Google footprint at Savannah Taphouse",
     },
     {
@@ -78,7 +78,7 @@ export const locations: LocationSummary[] = [
     status: "live",
     rating: 4.2,
     ratingLabel: "4.2 / 5",
-    reviewCountLabel: "418 Google reviews",
+    reviewCountLabel: "2,738 Google reviews",
     trend: "up",
     trendChipLabel: "stable",
     trendLabel: "Holding steady at 4.2 with a slightly stronger recent review trend",
