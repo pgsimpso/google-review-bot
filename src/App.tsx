@@ -128,6 +128,7 @@ function App() {
           </a>
 
           <nav aria-label="Primary">
+            <a href="../">Versions</a>
             {demoCopy.navLinks.map((link) => (
               <a key={link.id} href={`#${link.id}`}>
                 {link.label}
