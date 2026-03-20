@@ -370,7 +370,7 @@ nav a:hover {
 }
 
 .hero-mini-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .mini-metric-card,
@@ -519,6 +519,16 @@ nav a:hover {
   margin-top: 0.4rem;
   font-size: clamp(1.3rem, 3vw, 2.1rem);
   color: var(--text-main);
+}
+
+.mini-metric-card strong {
+  font-size: clamp(1.15rem, 2vw, 1.8rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.mini-metric-card p {
+  max-width: 26ch;
 }
 
 .trend-chip,
@@ -767,8 +777,7 @@ nav a:hover {
   .summary-stat-grid,
   .live-workspace-grid,
   .launch-workspace-grid,
-  .launch-preview-grid,
-  .hero-mini-grid {
+  .launch-preview-grid {
     grid-template-columns: 1fr;
   }
 
@@ -806,6 +815,10 @@ nav a:hover {
   .location-grid,
   .workspace-highlights,
   .launch-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-mini-grid {
     grid-template-columns: 1fr;
   }
 
