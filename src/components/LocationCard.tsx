@@ -7,11 +7,19 @@ interface LocationCardProps {
   onSelect: (locationId: string) => void;
 }
 
+const trendMeta = {
+  up: { arrow: "\u2197", label: "up" },
+  flat: { arrow: "\u2192", label: "flat" },
+  down: { arrow: "\u2198", label: "down" },
+};
+
 export function LocationCard({
   location,
   active,
   onSelect,
 }: LocationCardProps) {
+  const trend = trendMeta[location.trend];
+
   return (
     <button
       type="button"
@@ -24,7 +32,8 @@ export function LocationCard({
       <div className="location-card-topline">
         <span className="eyebrow-label">{location.sourceLabel}</span>
         <span className={`trend-chip trend-${location.trend}`}>
-          {location.trend}
+          <span aria-hidden="true">{trend.arrow}</span>
+          {trend.label}
         </span>
       </div>
 

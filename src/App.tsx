@@ -43,6 +43,10 @@ function App() {
   const upcomingLocations = locations.filter(
     (location) => location.status === "coming-soon",
   );
+  const savannahThemes = themeCategories.filter(
+    (theme) => theme.locationId === "savannah-taphouse",
+  );
+  const savannahThemeMax = Math.max(...savannahThemes.map((theme) => theme.value), 1);
 
   function handleSelectLocation(locationId: string) {
     setActiveLocationId(locationId);
@@ -107,9 +111,9 @@ function App() {
     );
   }
 
-  function jumpToDashboard(locationId: string) {
+  function openWorkspace(locationId: string) {
     handleSelectLocation(locationId);
-    document.getElementById("dashboard")?.scrollIntoView({
+    document.getElementById("workspace")?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
@@ -119,16 +123,15 @@ function App() {
     <div className="app-shell">
       <header className="site-header">
         <div className="site-header-inner">
-          <a href="#hero" className="brand-lockup">
-            <span className="brand-mark">AC</span>
+          <a href="#overview" className="brand-lockup">
+            <span className="brand-mark">JT</span>
             <span>
-              Jay Trikha Presents
-              <strong>Reputation Dashboard Demo</strong>
+              Jay Trikha
+              <strong>Reputation Dashboard</strong>
             </span>
           </a>
 
           <nav aria-label="Primary">
-            <a href="../">Versions</a>
             {demoCopy.navLinks.map((link) => (
               <a key={link.id} href={`#${link.id}`}>
                 {link.label}
@@ -139,112 +142,156 @@ function App() {
       </header>
 
       <main>
-        <section id="hero" className="hero-section">
-          <div className="section-shell hero-grid">
-            <div className="hero-copy">
-              <span className="eyebrow-label">{demoCopy.hero.kicker}</span>
-              <h1>{demoCopy.hero.title}</h1>
-              <p className="hero-summary">{demoCopy.hero.summary}</p>
+        <section id="overview" className="hero-section">
+          <div className="section-shell">
+            <div className="board-stage">
+              <div className="board-header-row">
+                <div className="hero-copy">
+                  <span className="eyebrow-label">{demoCopy.hero.kicker}</span>
+                  <h1>{demoCopy.hero.title}</h1>
+                  <p className="hero-summary">{demoCopy.hero.summary}</p>
+                </div>
 
-              <div className="hero-actions">
-                <a className="primary-link-button" href={demoCopy.hero.primaryCtaHref}>
-                  {demoCopy.hero.primaryCtaLabel}
-                </a>
-                <a className="secondary-link-button" href={demoCopy.hero.secondaryCtaHref}>
-                  {demoCopy.hero.secondaryCtaLabel}
-                </a>
+                <div className="board-actions">
+                  <div className="hero-actions">
+                    <button
+                      type="button"
+                      className="primary-link-button"
+                      onClick={() => openWorkspace("savannah-taphouse")}
+                    >
+                      {demoCopy.hero.primaryCtaLabel}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-link-button"
+                      onClick={() =>
+                        openWorkspace(upcomingLocations[0]?.id ?? locations[0].id)
+                      }
+                    >
+                      {demoCopy.hero.secondaryCtaLabel}
+                    </button>
+                  </div>
+                  <p className="demo-badge">{demoCopy.hero.demoBadge}</p>
+                </div>
               </div>
 
-              <p className="demo-badge">{demoCopy.hero.demoBadge}</p>
-            </div>
+              <div className="summary-stat-grid">
+                {demoCopy.summaryStats.map((stat) => (
+                  <article key={stat.label} className="summary-stat-card">
+                    <span>{stat.label}</span>
+                    <strong>{stat.value}</strong>
+                    <p>{stat.detail}</p>
+                  </article>
+                ))}
+              </div>
 
-            <div className="hero-aside">
-              <article className="hero-story-card">
-                <span className="eyebrow-label">Why this matters</span>
-                <h2>Before Jay opens two more concepts, the review engine should already exist.</h2>
-                <p>
-                  The live venues prove the operating pattern. The upcoming venues are where the upside compounds: stronger first impressions, faster public responses, and a cleaner runway to the first page of reviews.
-                </p>
-              </article>
+              <div className="board-grid">
+                <div className="location-grid">
+                  {locations.map((location) => (
+                    <LocationCard
+                      key={location.id}
+                      location={location}
+                      active={location.id === activeLocation.id}
+                      onSelect={openWorkspace}
+                    />
+                  ))}
+                </div>
 
-              <div className="hero-mini-grid">
-                <article className="mini-metric-card">
-                  <span>After-service asks</span>
-                  <strong>Automated</strong>
-                  <p>Timed messages after checks, reservations, and VIP nights</p>
-                </article>
-                <article className="mini-metric-card">
-                  <span>Response layer</span>
-                  <strong>In Jay's voice</strong>
-                  <p>Approve, edit, or escalate without writing from scratch</p>
-                </article>
-                <article className="mini-metric-card">
-                  <span>Launch mode</span>
-                  <strong>Day-one ready</strong>
-                  <p>New listings do not wait months to develop social proof</p>
-                </article>
+                <aside className="board-side-stack">
+                  <section className="panel">
+                    <div className="panel-header">
+                      <div>
+                        <span className="eyebrow-label">Savannah Taphouse</span>
+                        <h4>Negative themes</h4>
+                      </div>
+                      <span className="panel-meta-label">last 60 days</span>
+                    </div>
+
+                    <div className="theme-list">
+                      {savannahThemes.map((theme) => (
+                        <div key={theme.id} className="theme-row">
+                          <div className="theme-row-top">
+                            <span>{theme.label}</span>
+                            <span>{theme.value} mentions</span>
+                          </div>
+                          <div className="theme-bar-track">
+                            <div
+                              className={`theme-bar-fill theme-${theme.tone}`}
+                              style={{
+                                width: `${(theme.value / savannahThemeMax) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="panel" id="launch-board">
+                    <div className="panel-header">
+                      <div>
+                        <span className="eyebrow-label">2026 launch queue</span>
+                        <h4>Public review count starts at zero</h4>
+                      </div>
+                    </div>
+
+                    <div className="launch-monitor-list">
+                      {upcomingLocations.map((location) => {
+                        const milestoneSet = launchMilestones.filter(
+                          (milestone) => milestone.locationId === location.id,
+                        );
+                        const completedMilestones = milestoneSet.filter(
+                          (milestone) => milestone.complete,
+                        ).length;
+                        const readiness =
+                          milestoneSet.length === 0
+                            ? 0
+                            : (completedMilestones / milestoneSet.length) * 100;
+
+                        return (
+                          <button
+                            key={location.id}
+                            type="button"
+                            className={`launch-monitor-card ${
+                              activeLocation.id === location.id
+                                ? "launch-monitor-card-active"
+                                : ""
+                            }`}
+                            onClick={() => openWorkspace(location.id)}
+                          >
+                            <div className="launch-monitor-top">
+                              <div>
+                                <strong>{location.name}</strong>
+                                <p>{location.ratingLabel}</p>
+                              </div>
+                              <span className="status-pill status-pending">0 reviews</span>
+                            </div>
+
+                            <div className="metric-progress-track">
+                              <div
+                                className="metric-progress-fill"
+                                style={{ width: `${readiness}%` }}
+                              />
+                            </div>
+
+                            <div className="launch-monitor-bottom">
+                              <span>
+                                {completedMilestones} / {milestoneSet.length} tasks complete
+                              </span>
+                              <span>{location.reviewCountLabel}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </aside>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="proof" className="section-block">
-          <div className="section-shell">
-            <div className="section-heading">
-              <span className="eyebrow-label">Proof and operating logic</span>
-              <h2>Review response speed and review volume both move revenue</h2>
-              <p>
-                The concept in this demo is not just prettier reporting. It is a system for getting more public proof, closing recovery loops faster, and giving new venues momentum from the start.
-              </p>
-            </div>
-
-            <div className="proof-grid">
-              {demoCopy.proofPoints.map((point) => (
-                <article key={point.label} className="proof-card">
-                  <span className="proof-value">{point.value}</span>
-                  <h3>{point.label}</h3>
-                  <p>{point.detail}</p>
-                  <a href={point.sourceUrl} target="_blank" rel="noreferrer">
-                    {point.sourceLabel}
-                  </a>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="overview" className="section-block">
-          <div className="section-shell">
-            <div className="section-heading">
-              <span className="eyebrow-label">Portfolio overview</span>
-              <h2>{demoCopy.overviewTitle}</h2>
-              <p>{demoCopy.overviewBody}</p>
-            </div>
-
-            <div className="summary-stat-grid">
-              {demoCopy.summaryStats.map((stat) => (
-                <article key={stat.label} className="summary-stat-card">
-                  <span>{stat.label}</span>
-                  <strong>{stat.value}</strong>
-                  <p>{stat.detail}</p>
-                </article>
-              ))}
-            </div>
-
-            <div className="location-grid">
-              {locations.map((location) => (
-                <LocationCard
-                  key={location.id}
-                  location={location}
-                  active={location.id === activeLocation.id}
-                  onSelect={handleSelectLocation}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="dashboard" className="section-block">
+        <section id="workspace" className="section-block">
           <div className="section-shell">
             <div className="section-heading">
               <span className="eyebrow-label">Workspace</span>
@@ -291,104 +338,7 @@ function App() {
             )}
           </div>
         </section>
-
-        <section id="launch-pad" className="section-block">
-          <div className="section-shell">
-            <div className="section-heading">
-              <span className="eyebrow-label">Opening pipeline</span>
-              <h2>{demoCopy.launchTitle}</h2>
-              <p>{demoCopy.launchBody}</p>
-            </div>
-
-            <div className="launch-preview-grid">
-              {upcomingLocations.map((location) => {
-                const milestoneSet = launchMilestones.filter(
-                  (milestone) => milestone.locationId === location.id,
-                );
-                const completedMilestones = milestoneSet.filter(
-                  (milestone) => milestone.complete,
-                ).length;
-                const goalTarget = location.launchGoal ?? 50;
-                const goalCurrent = location.launchProgress ?? 0;
-
-                return (
-                  <article key={location.id} className="launch-preview-card">
-                    <div className="launch-preview-top">
-                      <span className="eyebrow-label">{location.shortName}</span>
-                      <span className="trend-chip trend-up">launch mode</span>
-                    </div>
-                    <h3>{location.name}</h3>
-                    <p>{location.focusBlurb}</p>
-
-                    <div className="launch-preview-stats">
-                      <div>
-                        <span>Checklist</span>
-                        <strong>
-                          {completedMilestones} / {milestoneSet.length}
-                        </strong>
-                      </div>
-                      <div>
-                        <span>Review target</span>
-                        <strong>
-                          {goalCurrent} / {goalTarget}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="metric-progress-track">
-                      <div
-                        className="metric-progress-fill"
-                        style={{
-                          width: `${Math.min((goalCurrent / goalTarget) * 100, 100)}%`,
-                        }}
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      className="action-button action-primary"
-                      onClick={() => jumpToDashboard(location.id)}
-                    >
-                      Open launch workspace
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section id="cta" className="section-block cta-section">
-          <div className="section-shell cta-shell">
-            <div className="section-heading">
-              <span className="eyebrow-label">Closing note</span>
-              <h2>{demoCopy.ctaTitle}</h2>
-              <p>{demoCopy.ctaBody}</p>
-            </div>
-
-            <div className="cta-actions">
-              <a
-                className="primary-link-button"
-                href={demoCopy.ctaPrimaryHref}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {demoCopy.ctaPrimaryLabel}
-              </a>
-              <a className="secondary-link-button" href={demoCopy.ctaSecondaryHref}>
-                {demoCopy.ctaSecondaryLabel}
-              </a>
-            </div>
-          </div>
-        </section>
       </main>
-
-      <footer className="site-footer">
-        <div className="section-shell site-footer-inner">
-          <p>Built as a static React + Vite demo for GitHub Pages deployment.</p>
-          <p>Demo data is interactive and intentionally non-production.</p>
-        </div>
-      </footer>
     </div>
   );
 }

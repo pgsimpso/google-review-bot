@@ -56,12 +56,13 @@ export function LiveDashboard({
     (review) => review.status === "responded",
   ).length;
   const isExternalLink = location.linkUrl.startsWith("http");
+  const maxThemeValue = Math.max(...themes.map((theme) => theme.value), 1);
 
   return (
     <div className="dashboard-shell">
       <div className="dashboard-title-row">
         <div>
-          <span className="eyebrow-label">Live venue workspace</span>
+          <span className="eyebrow-label">Live location</span>
           <h3>{location.name}</h3>
         </div>
         <a
@@ -76,19 +77,19 @@ export function LiveDashboard({
 
       <div className="workspace-highlights">
         <article className="workspace-highlight-card">
-          <span>Pending queue</span>
+          <span>Drafts waiting</span>
           <strong>{pendingCount}</strong>
-          <p>Reviews still waiting on approval or final edits</p>
+          <p>Replies that still need a post or final edit</p>
         </article>
         <article className="workspace-highlight-card">
           <span>Responded</span>
           <strong>{respondedCount}</strong>
-          <p>Posts already covered in the public thread</p>
+          <p>Reviews already answered in the public thread</p>
         </article>
         <article className="workspace-highlight-card">
-          <span>Needs escalation</span>
+          <span>Escalated</span>
           <strong>{flaggedCount}</strong>
-          <p>Hand-off items for management follow-up</p>
+          <p>Items that need an owner follow-up before posting</p>
         </article>
       </div>
 
@@ -115,10 +116,6 @@ export function LiveDashboard({
               ))}
             </div>
           </div>
-
-          <p className="panel-note">
-            Demo operations data. Review texts are curated examples and response actions are interactive.
-          </p>
 
           <div className="review-list">
             {filteredReviews.map((review) => {
@@ -153,7 +150,7 @@ export function LiveDashboard({
 
                   <div className="response-panel">
                     <div className="response-header">
-                      <span className="eyebrow-label">AI response draft</span>
+                      <span className="eyebrow-label">Draft reply</span>
                     </div>
 
                     {isEditing ? (
@@ -230,24 +227,21 @@ export function LiveDashboard({
           <section className="panel">
             <div className="panel-header">
               <div>
-                <span className="eyebrow-label">Theme tracker</span>
-                <h4>What guests keep mentioning</h4>
+                <span className="eyebrow-label">Negative themes</span>
+                <h4>What keeps showing up in reviews</h4>
               </div>
             </div>
-            <p className="panel-note">
-              Based on the concept brief. Bar heights represent demo weighting, not live NLP output.
-            </p>
             <div className="theme-list">
               {themes.map((theme) => (
                 <div key={theme.id} className="theme-row">
                   <div className="theme-row-top">
                     <span>{theme.label}</span>
-                    <span>{theme.value}</span>
+                    <span>{theme.value} mentions</span>
                   </div>
                   <div className="theme-bar-track">
                     <div
                       className={`theme-bar-fill theme-${theme.tone}`}
-                      style={{ width: `${theme.value}%` }}
+                      style={{ width: `${(theme.value / maxThemeValue) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -258,13 +252,10 @@ export function LiveDashboard({
           <section className="panel">
             <div className="panel-header">
               <div>
-                <span className="eyebrow-label">Review request automation</span>
-                <h4>Post-visit engine</h4>
+                <span className="eyebrow-label">Review capture</span>
+                <h4>Post-visit performance</h4>
               </div>
             </div>
-            <p className="panel-note">
-              Operational metrics are simulated to show the workflow design, not a live integration.
-            </p>
             <div className="metric-stack">
               {metrics.map((metric) => (
                 <article key={metric.id} className="metric-card">
