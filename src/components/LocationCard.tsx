@@ -5,6 +5,7 @@ interface LocationCardProps {
   milestones: LaunchMilestone[];
   unansweredCount: number;
   active: boolean;
+  compact?: boolean;
   onSelect: (locationId: string) => void;
 }
 
@@ -30,6 +31,7 @@ export function LocationCard({
   milestones,
   unansweredCount,
   active,
+  compact = false,
   onSelect,
 }: LocationCardProps) {
   const completedMilestones = milestones.filter((milestone) => milestone.complete).length;
@@ -38,6 +40,8 @@ export function LocationCard({
   const progressTarget = location.launchGoal ?? 50;
   const progressCurrent = location.launchProgress ?? 0;
   const progressPercent = Math.min((progressCurrent / progressTarget) * 100, 100);
+  const nextOpenMilestone =
+    milestones.find((milestone) => !milestone.complete) ?? milestones[0] ?? null;
 
   if (location.status === "coming-soon") {
     return (
@@ -61,36 +65,53 @@ export function LocationCard({
           </div>
         </div>
 
-        <div className="launch-checklist-preview">
-          {milestones.slice(0, 3).map((milestone) => (
-            <div key={milestone.id} className="launch-checklist-row">
-              <span
-                className={`launch-check-icon ${
-                  milestone.complete ? "launch-check-icon-complete" : ""
-                }`}
-                aria-hidden="true"
-              >
-                {milestone.complete ? "✓" : "○"}
-              </span>
-              <span>{milestone.label}</span>
+        {compact ? (
+          <div className="location-card-compact-grid">
+            <div className="location-card-compact-stat">
+              <span>Next priority</span>
+              <strong>{nextOpenMilestone?.label ?? "All set"}</strong>
             </div>
-          ))}
-        </div>
+            <div className="location-card-compact-stat">
+              <span>First-50 goal</span>
+              <strong>
+                {progressCurrent} / {progressTarget}
+              </strong>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="launch-checklist-preview">
+              {milestones.slice(0, 3).map((milestone) => (
+                <div key={milestone.id} className="launch-checklist-row">
+                  <span
+                    className={`launch-check-icon ${
+                      milestone.complete ? "launch-check-icon-complete" : ""
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {milestone.complete ? "✓" : "○"}
+                  </span>
+                  <span>{milestone.label}</span>
+                </div>
+              ))}
+            </div>
 
-        <div className="launch-goal-block">
-          <div className="launch-goal-top">
-            <span>First-50 review goal</span>
-            <strong>
-              {progressCurrent} / {progressTarget}
-            </strong>
-          </div>
-          <div className="metric-progress-track">
-            <div
-              className="metric-progress-fill"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
+            <div className="launch-goal-block">
+              <div className="launch-goal-top">
+                <span>First-50 review goal</span>
+                <strong>
+                  {progressCurrent} / {progressTarget}
+                </strong>
+              </div>
+              <div className="metric-progress-track">
+                <div
+                  className="metric-progress-fill"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </button>
     );
   }
@@ -121,20 +142,40 @@ export function LocationCard({
           <p className="location-address">{location.address}</p>
         </div>
 
-        <div className="location-score-block">
-          <strong>{location.ratingLabel}</strong>
-          {renderRatingStars(location.rating)}
-        </div>
+        {!compact ? (
+          <div className="location-score-block">
+            <strong>{location.ratingLabel}</strong>
+            {renderRatingStars(location.rating)}
+          </div>
+        ) : null}
       </div>
 
-      <div className="location-card-stat">
-        <span>Reviews this week</span>
-        <strong>+{location.reviewsThisWeek}</strong>
-        <p>
-          {location.reviewsThisWeek >= location.reviewsLastWeek ? "up" : "down"} from{" "}
-          {location.reviewsLastWeek} last week
-        </p>
-      </div>
+      {compact ? (
+        <div className="location-card-compact-grid">
+          <div className="location-card-compact-stat">
+            <span>Rating</span>
+            <strong>{location.ratingLabel}</strong>
+            {renderRatingStars(location.rating)}
+          </div>
+          <div className="location-card-compact-stat">
+            <span>This week</span>
+            <strong>+{location.reviewsThisWeek}</strong>
+            <p>
+              {location.reviewsThisWeek >= location.reviewsLastWeek ? "up" : "down"} from{" "}
+              {location.reviewsLastWeek}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="location-card-stat">
+          <span>Reviews this week</span>
+          <strong>+{location.reviewsThisWeek}</strong>
+          <p>
+            {location.reviewsThisWeek >= location.reviewsLastWeek ? "up" : "down"} from{" "}
+            {location.reviewsLastWeek} last week
+          </p>
+        </div>
+      )}
     </button>
   );
 }

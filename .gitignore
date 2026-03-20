@@ -1,6 +1,10 @@
 node_modules/
 dist/
 *.tsbuildinfo
+.playwright-cli/
+output/
+page-full.png
+page.png
 
 repautopilot.md
 taphouse.md

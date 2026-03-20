@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { MobileComposerSheet } from "./MobileComposerSheet";
 import type {
   AutomationMetric,
   LocationSummary,
@@ -8,6 +9,7 @@ import type {
 } from "../types";
 
 type ReviewFilter = "all" | "actionable" | ReviewStatus;
+type DraftStatus = "idle" | "editing" | "saved";
 
 interface LiveDashboardProps {
   location: LocationSummary;
@@ -18,15 +20,18 @@ interface LiveDashboardProps {
   reviewFilter: ReviewFilter;
   editingReviewId: string | null;
   draftResponse: string;
+  draftStatus: DraftStatus;
   focusedReviewId: string | null;
   autoSendPositive: boolean;
+  isCompactViewport: boolean;
+  showHeader?: boolean;
   onReviewFilterChange: (filter: ReviewFilter) => void;
-  onApproveReview: (reviewId: string) => void;
+  onApproveReview: (reviewId: string, responseOverride?: string) => void;
   onFlagReview: (reviewId: string) => void;
   onStartEditing: (review: ReviewItem) => void;
   onFocusReview: (reviewId: string) => void;
   onDraftResponseChange: (value: string) => void;
-  onSaveDraft: () => void;
+  onSaveDraft: (closeEditor?: boolean) => void;
   onCancelEditing: () => void;
   onToggleAutoSend: () => void;
 }
@@ -54,6 +59,55 @@ function reviewMatchesTheme(review: ReviewItem, theme: ThemeCategory) {
   return review.tags.some((tag) => theme.relatedTags.includes(tag));
 }
 
+function getDraftPreview(copy: string) {
+  const sentence = copy.split(". ")[0] ?? copy;
+  return sentence.endsWith(".") ? sentence : `${sentence}.`;
+}
+
+function getThemeDeltaLabel(theme: ThemeCategory) {
+  const delta = theme.value - theme.previousValue;
+
+  if (delta === 0) {
+    return "Flat vs last week";
+  }
+
+  return `${delta > 0 ? "+" : ""}${delta} vs last week`;
+}
+
+function getNextStep(waitingCount: number, flaggedCount: number) {
+  if (flaggedCount > 0) {
+    return {
+      title: `${flaggedCount} owner call${flaggedCount === 1 ? "" : "s"} come first`,
+      detail:
+        "Start with the recovery work, then move through drafted replies once the owner callbacks are covered.",
+    };
+  }
+
+  if (waitingCount > 0) {
+    return {
+      title: `${waitingCount} drafted repl${waitingCount === 1 ? "y" : "ies"} can clear the queue`,
+      detail: "Approve the drafts, get the inbox to zero, and leave analytics for after service.",
+    };
+  }
+
+  return {
+    title: "Queue clear",
+    detail: "Nothing needs action here right now. Use the time for launch readiness or theme checks.",
+  };
+}
+
+function getWhyThisMatters(review: ReviewItem) {
+  if (review.status === "flagged" || review.stars === 1) {
+    return "Guest expects manager recovery";
+  }
+
+  if (review.sentiment === "mixed") {
+    return "Reply quickly while sentiment is still recoverable";
+  }
+
+  return null;
+}
+
 export function LiveDashboard({
   location,
   reviews,
@@ -63,8 +117,11 @@ export function LiveDashboard({
   reviewFilter,
   editingReviewId,
   draftResponse,
+  draftStatus,
   focusedReviewId,
   autoSendPositive,
+  isCompactViewport,
+  showHeader = true,
   onReviewFilterChange,
   onApproveReview,
   onFlagReview,
@@ -76,6 +133,9 @@ export function LiveDashboard({
   onToggleAutoSend,
 }: LiveDashboardProps) {
   const [highlightedThemeId, setHighlightedThemeId] = useState<string | null>(null);
+  const [expandedReviewIds, setExpandedReviewIds] = useState<Record<string, boolean>>({});
+  const [expandedDraftIds, setExpandedDraftIds] = useState<Record<string, boolean>>({});
+  const [metricsExpanded, setMetricsExpanded] = useState(!isCompactViewport);
   const waitingCount = reviews.filter(
     (review) =>
       review.status !== "responded" &&
@@ -90,11 +150,36 @@ export function LiveDashboard({
   ).length;
   const highlightedTheme =
     themes.find((theme) => theme.id === highlightedThemeId) ?? null;
+  const editingReview =
+    editingReviewId !== null
+      ? reviews.find((review) => review.id === editingReviewId) ?? null
+      : null;
   const isExternalLink = location.linkUrl.startsWith("http");
+  const nextStep = getNextStep(waitingCount, flaggedCount);
 
   useEffect(() => {
     setHighlightedThemeId(null);
+    setExpandedReviewIds({});
+    setExpandedDraftIds({});
   }, [location.id]);
+
+  useEffect(() => {
+    setMetricsExpanded(!isCompactViewport);
+  }, [isCompactViewport, location.id]);
+
+  function toggleExpandedReview(reviewId: string) {
+    setExpandedReviewIds((current) => ({
+      ...current,
+      [reviewId]: !current[reviewId],
+    }));
+  }
+
+  function toggleExpandedDraft(reviewId: string) {
+    setExpandedDraftIds((current) => ({
+      ...current,
+      [reviewId]: !current[reviewId],
+    }));
+  }
 
   function handleFocusTheme(theme: ThemeCategory) {
     setHighlightedThemeId(theme.id);
@@ -115,70 +200,101 @@ export function LiveDashboard({
 
   return (
     <div className="dashboard-shell">
-      <div className="dashboard-title-row">
-        <div>
-          <span className="eyebrow-label">Live location</span>
-          <h3>{location.name}</h3>
+      {showHeader ? (
+        <div className="dashboard-title-row">
+          <div>
+            <span className="eyebrow-label">Live location</span>
+            <h3>{location.name}</h3>
+          </div>
+          <a
+            href={location.linkUrl}
+            {...(isExternalLink
+              ? { target: "_blank", rel: "noreferrer" }
+              : {})}
+          >
+            {location.linkLabel}
+          </a>
         </div>
-        <a
-          href={location.linkUrl}
-          {...(isExternalLink
-            ? { target: "_blank", rel: "noreferrer" }
-            : {})}
-        >
-          {location.linkLabel}
-        </a>
-      </div>
+      ) : null}
 
       <div className="workspace-highlights">
         <article className="workspace-highlight-card">
           <span>Waiting now</span>
           <strong>{waitingCount}</strong>
-          <p>Reviews that still need a reply or a personal call.</p>
+          <p>{isCompactViewport ? "Reviews left to clear" : "Reviews still waiting on a reply or owner follow-up."}</p>
         </article>
         <article className="workspace-highlight-card">
-          <span>Personal calls</span>
+          <span>Owner calls</span>
           <strong>{flaggedCount}</strong>
-          <p>One-star or escalated reviews that should not be handled casually.</p>
+          <p>{isCompactViewport ? "Recovery items first" : "Escalated reviews that should not be handled casually."}</p>
         </article>
         <article className="workspace-highlight-card">
           <span>Auto-send ready</span>
           <strong>{autoSendEligibleCount}</strong>
-          <p>Positive reviews that can skip manual review when the rule is on.</p>
+          <p>{isCompactViewport ? "Positive reviews eligible now" : "Positive reviews that can skip manual review when the rule is on."}</p>
         </article>
         <article className="workspace-highlight-card">
           <span>Handled</span>
           <strong>{respondedCount}</strong>
-          <p>Public replies that are already out the door for this location.</p>
+          <p>{isCompactViewport ? "Replies already posted" : "Public replies that are already out the door for this location."}</p>
         </article>
       </div>
 
-      <section className="panel queue-settings-card">
-        <div className="queue-settings-copy">
-          <span className="eyebrow-label">Automation rule</span>
-          <h4>4-5 star reviews can skip Jay's queue.</h4>
-          <p>
-            Keep the owner's time for recoveries. Positive reviews can move
-            straight through once the tone is approved.
-          </p>
-        </div>
-        <button
-          type="button"
-          className={`toggle-chip ${autoSendPositive ? "toggle-chip-active" : ""}`}
-          onClick={onToggleAutoSend}
-          aria-pressed={autoSendPositive}
-        >
-          Auto-send {autoSendPositive ? "on" : "off"}
-        </button>
-      </section>
+      {isCompactViewport ? (
+        <section className="panel mobile-next-step-card">
+          <div className="mobile-next-step-copy">
+            <span className="eyebrow-label">Tonight&apos;s next move</span>
+            <h4>{nextStep.title}</h4>
+            <p>{nextStep.detail}</p>
+          </div>
+          <div className="mobile-next-step-footer">
+            <span>4-5 star auto-send</span>
+            <button
+              type="button"
+              className={`toggle-chip ${autoSendPositive ? "toggle-chip-active" : ""}`}
+              onClick={onToggleAutoSend}
+              aria-pressed={autoSendPositive}
+            >
+              {autoSendPositive ? "Auto-send on" : "Auto-send off"}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="panel queue-settings-card">
+          <div className="queue-settings-copy">
+            <span className="eyebrow-label">Automation rule</span>
+            <h4>4-5 star reviews can skip Jay&apos;s queue.</h4>
+            <p>
+              Keep the owner&apos;s time for recoveries. Positive reviews can move
+              straight through once the tone is approved.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={`toggle-chip ${autoSendPositive ? "toggle-chip-active" : ""}`}
+            onClick={onToggleAutoSend}
+            aria-pressed={autoSendPositive}
+          >
+            Auto-send {autoSendPositive ? "on" : "off"}
+          </button>
+        </section>
+      )}
 
       <section className="panel queue-panel">
-        <div className="panel-header queue-panel-header">
+        <div
+          className={`panel-header queue-panel-header ${
+            isCompactViewport ? "queue-panel-header-compact" : ""
+          }`}
+        >
           <div>
             <span className="eyebrow-label">Review queue</span>
             <h4>Clear the work to zero</h4>
           </div>
-          <div className="filter-row" role="tablist" aria-label="Review filters">
+          <div
+            className={`filter-row ${isCompactViewport ? "filter-row-sticky" : ""}`}
+            role="tablist"
+            aria-label="Review filters"
+          >
             {filterLabels.map((filter) => (
               <button
                 key={filter.value}
@@ -217,6 +333,9 @@ export function LiveDashboard({
               : false;
             const isAutoHandled = isAutoHandledReview(review, autoSendPositive);
             const statusClassName = isAutoHandled ? "auto-send" : review.status;
+            const snippetExpanded = expandedReviewIds[review.id] ?? false;
+            const draftExpanded = expandedDraftIds[review.id] ?? false;
+            const whyThisMatters = getWhyThisMatters(review);
 
             return (
               <article
@@ -228,22 +347,24 @@ export function LiveDashboard({
                 onClick={() => onFocusReview(review.id)}
               >
                 <div className="review-card-top">
-                  <div className="review-meta">
-                    <div>
-                      <strong>{review.author}</strong>
-                      <p>
-                        {review.stars} / 5 on {review.dateLabel}
-                      </p>
-                    </div>
+                  <div className="review-card-status-row">
                     <span className={`status-pill status-${statusClassName}`}>
                       {isAutoHandled
                         ? "auto-send"
                         : review.status === "flagged"
-                        ? "personal call"
-                        : review.status === "responded"
-                          ? "sent"
-                          : "waiting"}
+                          ? "owner call"
+                          : review.status === "responded"
+                            ? "sent"
+                            : "waiting"}
                     </span>
+                    <span className="review-stars-label">
+                      {review.stars} star{review.stars === 1 ? "" : "s"}
+                    </span>
+                  </div>
+
+                  <div className="review-card-author-row">
+                    <strong>{review.author}</strong>
+                    <p>{review.dateLabel}</p>
                   </div>
 
                   <div className="tag-row">
@@ -255,17 +376,57 @@ export function LiveDashboard({
                   </div>
                 </div>
 
-                <p className="review-snippet">{review.snippet}</p>
+                {whyThisMatters ? (
+                  <div className="review-why-card">
+                    <span className="eyebrow-label">Why this matters</span>
+                    <p>{whyThisMatters}</p>
+                  </div>
+                ) : null}
+
+                <p
+                  className={`review-snippet ${
+                    !snippetExpanded ? "review-snippet-clamped" : ""
+                  }`}
+                >
+                  {review.snippet}
+                </p>
+
+                {review.snippet.length > 120 ? (
+                  <button
+                    type="button"
+                    className="secondary-link-button review-inline-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleExpandedReview(review.id);
+                    }}
+                  >
+                    {snippetExpanded ? "Show less" : "Read more"}
+                  </button>
+                ) : null}
 
                 <div className="response-panel">
                   <div className="response-header">
-                    <span className="eyebrow-label">AI draft ready</span>
-                    {review.stars === 1 ? (
-                      <span className="priority-label">Personal call recommended</span>
+                    <div>
+                      <span className="eyebrow-label">AI draft ready</span>
+                      {review.stars === 1 ? (
+                        <span className="priority-label">Manager recovery likely</span>
+                      ) : null}
+                    </div>
+                    {!isEditing || !isCompactViewport ? (
+                      <button
+                        type="button"
+                        className="secondary-link-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleExpandedDraft(review.id);
+                        }}
+                      >
+                        {draftExpanded ? "Hide reply" : "Preview reply"}
+                      </button>
                     ) : null}
                   </div>
 
-                  {isEditing ? (
+                  {isEditing && !isCompactViewport ? (
                     <textarea
                       value={draftResponse}
                       onChange={(event) =>
@@ -274,70 +435,107 @@ export function LiveDashboard({
                       aria-label={`Edit response for ${review.author}`}
                     />
                   ) : (
-                    <p>{review.aiResponse}</p>
+                    <>
+                      <p className="response-preview">
+                        {draftExpanded
+                          ? review.aiResponse
+                          : getDraftPreview(review.aiResponse)}
+                      </p>
+
+                      {review.status === "responded" ? (
+                        <span className="response-status-note">
+                          Response already posted publicly.
+                        </span>
+                      ) : null}
+
+                      {isAutoHandled ? (
+                        <span className="response-status-note">
+                          Auto-send is on for this positive review, so it only needs
+                          attention if you want to change the reply.
+                        </span>
+                      ) : null}
+
+                      {isEditing && isCompactViewport ? (
+                        <span className="response-status-note">
+                          Editing now happens in the reply composer.
+                        </span>
+                      ) : null}
+                    </>
                   )}
 
-                  <div className="action-row">
-                    {isEditing ? (
+                  <div
+                    className={`action-row ${
+                      isCompactViewport ? "action-row-compact" : ""
+                    }`}
+                  >
+                    {isEditing && !isCompactViewport ? (
                       <>
                         <button
                           type="button"
                           className="action-button action-primary"
-                          onClick={onSaveDraft}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onSaveDraft();
+                          }}
                         >
                           Save draft
                         </button>
                         <button
                           type="button"
                           className="action-button"
-                          onClick={onCancelEditing}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onCancelEditing();
+                          }}
                         >
                           Cancel
                         </button>
                       </>
-                    ) : review.status === "responded" ? (
-                      <span className="response-status-note">
-                        Response already posted publicly.
-                      </span>
-                    ) : isAutoHandled ? (
-                      <>
-                        <span className="response-status-note">
-                          Auto-send is on for 4-5 star reviews, so this one skips the
-                          nightly queue unless you want to edit it.
-                        </span>
-                        <button
-                          type="button"
-                          className="action-button"
-                          onClick={() => onStartEditing(review)}
-                        >
-                          Edit anyway
-                        </button>
-                      </>
+                    ) : review.status === "responded" ? null : isAutoHandled ? (
+                      <button
+                        type="button"
+                        className="action-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onStartEditing(review);
+                        }}
+                      >
+                        Edit draft
+                      </button>
                     ) : (
                       <>
                         <button
                           type="button"
                           className="action-button action-primary"
-                          onClick={() => onApproveReview(review.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onApproveReview(review.id);
+                          }}
                         >
                           Approve &amp; send
                         </button>
                         <button
                           type="button"
                           className="action-button"
-                          onClick={() => onStartEditing(review)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onStartEditing(review);
+                          }}
                         >
-                          Edit
+                          Edit draft
                         </button>
                         {(review.sentiment !== "positive" || review.stars === 1) && (
                           <button
                             type="button"
-                            className="action-button"
-                            onClick={() => onFlagReview(review.id)}
+                            className="review-warning-action"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onFlagReview(review.id);
+                            }}
                           >
                             {review.status === "flagged"
-                              ? "Personal call flagged"
-                              : "Flag for personal call"}
+                              ? "Owner call flagged"
+                              : "Escalate to owner call"}
                           </button>
                         )}
                       </>
@@ -361,18 +559,14 @@ export function LiveDashboard({
         <section className="panel theme-alert-panel">
           <div className="panel-header">
             <div>
-              <span className="eyebrow-label">Operational alerts</span>
-              <h4>What guests keep bringing up</h4>
+              <span className="eyebrow-label">Issues</span>
+              <h4>Issues guests keep repeating</h4>
             </div>
           </div>
 
           <div className="theme-alert-list">
             {themes.map((theme) => {
               const spike = isThemeSpike(theme);
-              const directionLabel =
-                theme.value >= theme.previousValue
-                  ? `up from ${theme.previousValue} last week`
-                  : `down from ${theme.previousValue} last week`;
 
               return (
                 <article
@@ -382,18 +576,19 @@ export function LiveDashboard({
                   }`}
                 >
                   <div className="theme-alert-top">
-                    <strong>
-                      {theme.value} reviews mentioned "{theme.label}" this week
-                    </strong>
+                    <strong>{theme.label}</strong>
                     {spike ? <span className="spike-badge">spike</span> : null}
                   </div>
-                  <p>{directionLabel}. Treat this like an ops issue, not a chart.</p>
+                  <div className="issue-card-copy">
+                    <p>{theme.value} reviews this week</p>
+                    <span className="issue-delta">{getThemeDeltaLabel(theme)}</span>
+                  </div>
                   <button
                     type="button"
                     className="secondary-link-button"
                     onClick={() => handleFocusTheme(theme)}
                   >
-                    See all {theme.value}
+                    Open related reviews
                   </button>
                 </article>
               );
@@ -402,32 +597,55 @@ export function LiveDashboard({
         </section>
 
         <section className="panel analytics-panel">
-          <div className="panel-header">
+          <div className="panel-header analytics-panel-header">
             <div>
               <span className="eyebrow-label">Analytics</span>
-              <h4>Context after the queue</h4>
+              <h4>More context after the queue</h4>
             </div>
+            {isCompactViewport ? (
+              <button
+                type="button"
+                className="secondary-link-button"
+                onClick={() => setMetricsExpanded((current) => !current)}
+              >
+                {metricsExpanded ? "Hide context" : "More context"}
+              </button>
+            ) : null}
           </div>
 
-          <div className="metric-stack">
-            {metrics.map((metric) => (
-              <article key={metric.id} className="metric-card">
-                <div className="metric-card-top">
-                  <span>{metric.label}</span>
-                  <strong>{metric.value}</strong>
-                </div>
-                <p>{metric.sublabel}</p>
-                <div className="metric-progress-track">
-                  <div
-                    className="metric-progress-fill"
-                    style={{ width: `${metric.progress * 100}%` }}
-                  />
-                </div>
-              </article>
-            ))}
-          </div>
+          {!isCompactViewport || metricsExpanded ? (
+            <div className="metric-stack">
+              {metrics.map((metric) => (
+                <article key={metric.id} className="metric-card">
+                  <div className="metric-card-top">
+                    <span>{metric.label}</span>
+                    <strong>{metric.value}</strong>
+                  </div>
+                  <p>{metric.sublabel}</p>
+                  <div className="metric-progress-track">
+                    <div
+                      className="metric-progress-fill"
+                      style={{ width: `${metric.progress * 100}%` }}
+                    />
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
         </section>
       </div>
+
+      {isCompactViewport && editingReview ? (
+        <MobileComposerSheet
+          review={editingReview}
+          draftResponse={draftResponse}
+          draftStatus={draftStatus}
+          onDraftResponseChange={onDraftResponseChange}
+          onSaveDraft={() => onSaveDraft(false)}
+          onApproveAndSend={() => onApproveReview(editingReview.id, draftResponse)}
+          onClose={onCancelEditing}
+        />
+      ) : null}
     </div>
   );
 }
