@@ -132,7 +132,7 @@ export function LocationCard({
             unansweredCount > 0 ? "location-card-badge-alert" : "location-card-badge-clear"
           }`}
         >
-          {unansweredCount > 0 ? `${unansweredCount} waiting` : "All caught up"}
+          {unansweredCount > 0 ? `${unansweredCount} open` : "All caught up"}
         </span>
       </div>
 

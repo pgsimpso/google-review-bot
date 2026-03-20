@@ -171,7 +171,7 @@ export const reviews: ReviewItem[] = [
     receivedAt: "2026-03-19T13:22:00-04:00",
     dateLabel: "Mar 19, 1:22 PM",
     sentiment: "negative",
-    status: "pending",
+    status: "flagged",
     snippet:
       "We were the only patrons when we arrived for lunch. There was an unfortunate sewer odor as we walked to the bar. It was a chilly day and the bar was not a warm respite from the cold...it was cold inside too. The bartender was very friendly and helpful when we asked for local beer recoendations. Unfortunately the kitchen did not meet expectations with very slow service and some of the food on my plate was already \"cool\" by the time it made it to me.",
     aiResponse:
@@ -261,7 +261,7 @@ export const reviews: ReviewItem[] = [
     receivedAt: "2026-03-18T09:11:00-04:00",
     dateLabel: "Mar 18, 9:11 AM",
     sentiment: "mixed",
-    status: "pending",
+    status: "flagged",
     snippet:
       "Decent coffee, great staff, but what is going on with the blaring techno music dialed up to 11?",
     aiResponse:

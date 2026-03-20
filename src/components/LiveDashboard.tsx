@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MobileComposerSheet } from "./MobileComposerSheet";
+import { getReviewStatusLabel, isAutoHandledReview } from "../reviewWorkflow";
 import type {
   AutomationMetric,
   LocationSummary,
@@ -37,15 +38,11 @@ interface LiveDashboardProps {
 }
 
 const filterLabels: { label: string; value: ReviewFilter }[] = [
-  { label: "Waiting", value: "actionable" },
-  { label: "Flagged", value: "flagged" },
+  { label: "Open", value: "actionable" },
+  { label: "Owner calls", value: "flagged" },
   { label: "Responded", value: "responded" },
   { label: "All", value: "all" },
 ];
-
-function isAutoHandledReview(review: ReviewItem, autoSendPositive: boolean) {
-  return autoSendPositive && review.status === "pending" && review.stars >= 4;
-}
 
 function isThemeSpike(theme: ThemeCategory) {
   if (theme.previousValue === 0) {
@@ -74,7 +71,7 @@ function getThemeDeltaLabel(theme: ThemeCategory) {
   return `${delta > 0 ? "+" : ""}${delta} vs last week`;
 }
 
-function getNextStep(waitingCount: number, flaggedCount: number) {
+function getNextStep(openCount: number, flaggedCount: number) {
   if (flaggedCount > 0) {
     return {
       title: `${flaggedCount} owner call${flaggedCount === 1 ? "" : "s"} come first`,
@@ -83,9 +80,9 @@ function getNextStep(waitingCount: number, flaggedCount: number) {
     };
   }
 
-  if (waitingCount > 0) {
+  if (openCount > 0) {
     return {
-      title: `${waitingCount} drafted repl${waitingCount === 1 ? "y" : "ies"} can clear the queue`,
+      title: `${openCount} drafted repl${openCount === 1 ? "y" : "ies"} can clear the queue`,
       detail: "Approve the drafts, get the inbox to zero, and leave analytics for after service.",
     };
   }
@@ -136,7 +133,7 @@ export function LiveDashboard({
   const [expandedReviewIds, setExpandedReviewIds] = useState<Record<string, boolean>>({});
   const [expandedDraftIds, setExpandedDraftIds] = useState<Record<string, boolean>>({});
   const [metricsExpanded, setMetricsExpanded] = useState(!isCompactViewport);
-  const waitingCount = reviews.filter(
+  const openCount = reviews.filter(
     (review) =>
       review.status !== "responded" &&
       !isAutoHandledReview(review, autoSendPositive),
@@ -155,7 +152,7 @@ export function LiveDashboard({
       ? reviews.find((review) => review.id === editingReviewId) ?? null
       : null;
   const isExternalLink = location.linkUrl.startsWith("http");
-  const nextStep = getNextStep(waitingCount, flaggedCount);
+  const nextStep = getNextStep(openCount, flaggedCount);
 
   useEffect(() => {
     setHighlightedThemeId(null);
@@ -219,9 +216,9 @@ export function LiveDashboard({
 
       <div className="workspace-highlights">
         <article className="workspace-highlight-card">
-          <span>Waiting now</span>
-          <strong>{waitingCount}</strong>
-          <p>{isCompactViewport ? "Reviews left to clear" : "Reviews still waiting on a reply or owner follow-up."}</p>
+          <span>Open now</span>
+          <strong>{openCount}</strong>
+          <p>{isCompactViewport ? "Reviews left to clear" : "Reviews still open for a reply or owner follow-up."}</p>
         </article>
         <article className="workspace-highlight-card">
           <span>Owner calls</span>
@@ -349,13 +346,7 @@ export function LiveDashboard({
                 <div className="review-card-top">
                   <div className="review-card-status-row">
                     <span className={`status-pill status-${statusClassName}`}>
-                      {isAutoHandled
-                        ? "auto-send"
-                        : review.status === "flagged"
-                          ? "owner call"
-                          : review.status === "responded"
-                            ? "sent"
-                            : "waiting"}
+                      {getReviewStatusLabel(review, autoSendPositive)}
                     </span>
                     <span className="review-stars-label">
                       {review.stars} star{review.stars === 1 ? "" : "s"}

@@ -11,14 +11,15 @@ import {
   themeCategories,
 } from "./data/demoData";
 import { useMediaQuery } from "./hooks/useMediaQuery";
+import {
+  getReviewStatusLabel,
+  isAutoHandledReview,
+  normalizeReviewWorkflow,
+} from "./reviewWorkflow";
 import type { LaunchMilestone, ReviewItem, ReviewStatus } from "./types";
 
 type ReviewFilter = "all" | "actionable" | ReviewStatus;
 type DraftStatus = "idle" | "editing" | "saved";
-
-function isAutoHandledReview(review: ReviewItem, autoSendPositive: boolean) {
-  return autoSendPositive && review.status === "pending" && review.stars >= 4;
-}
 
 function sortReviewsByUrgency(a: ReviewItem, b: ReviewItem) {
   const statusRank =
@@ -64,7 +65,7 @@ function getWeekComparisonLabel(thisWeek: number, lastWeek: number) {
 function getActionSummary(
   flaggedCount: number,
   pendingCount: number,
-  waitingCount: number,
+  openCount: number,
 ) {
   if (flaggedCount > 0) {
     return {
@@ -77,9 +78,9 @@ function getActionSummary(
     };
   }
 
-  if (waitingCount > 0) {
+  if (openCount > 0) {
     return {
-      title: `${waitingCount} drafted repl${waitingCount === 1 ? "y" : "ies"} can clear the queue.`,
+      title: `${openCount} drafted repl${openCount === 1 ? "y" : "ies"} can clear the queue.`,
       shortDescription:
         "Approve the drafted replies and get the inbox back to zero before checking analytics.",
       detail:
@@ -103,7 +104,9 @@ function getNextLaunchTask(milestones: LaunchMilestone[]) {
 function App() {
   const isCompactViewport = useMediaQuery("(max-width: 720px)");
   const [activeLocationId, setActiveLocationId] = useState(locations[0].id);
-  const [reviews, setReviews] = useState<ReviewItem[]>(initialReviews);
+  const [reviews, setReviews] = useState<ReviewItem[]>(() =>
+    initialReviews.map(normalizeReviewWorkflow),
+  );
   const [launchMilestones, setLaunchMilestones] = useState(initialLaunchMilestones);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("actionable");
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
@@ -157,7 +160,7 @@ function App() {
       );
     })
     .sort(sortReviewsByUrgency);
-  const waitingCount = portfolioQueue.length;
+  const openCount = portfolioQueue.length;
   const flaggedCount = portfolioQueue.filter(
     (review) => review.status === "flagged",
   ).length;
@@ -174,7 +177,7 @@ function App() {
     selectedReview && !isAutoHandledReview(selectedReview, autoSendPositive)
       ? selectedReview
       : firstQueueReview;
-  const activeLocationQueueCount =
+  const activeLocationOpenCount =
     activeLocation.status === "live"
       ? getQueueCount(reviews, activeLocation.id, autoSendPositive)
       : 0;
@@ -200,7 +203,7 @@ function App() {
   const portfolioActionSummary = getActionSummary(
     flaggedCount,
     pendingCount,
-    waitingCount,
+    openCount,
   );
   const activeActionSummary = getActionSummary(
     activeFlaggedCount,
@@ -401,12 +404,12 @@ function App() {
               <div className="status-copy">
                 <span className="eyebrow-label">Tonight's reputation inbox</span>
                 <h1>
-                  {waitingCount > 0
-                    ? `${waitingCount} reviews need attention right now.`
+                  {openCount > 0
+                    ? `${openCount} reviews need attention right now.`
                     : "You're all caught up."}
                 </h1>
                 <p>
-                  {waitingCount > 0
+                  {openCount > 0
                     ? isCompactViewport
                       ? portfolioActionSummary.shortDescription
                       : "Start with the personal-call flags, clear the drafted replies, and let the analytics wait until the queue hits zero."
@@ -420,8 +423,8 @@ function App() {
                 }`}
               >
                 <article className="status-summary-card">
-                  <span>Waiting now</span>
-                  <strong>{waitingCount}</strong>
+                  <span>Open now</span>
+                  <strong>{openCount}</strong>
                   <p>Across Savannah Taphouse and Pritchard &amp; Co.</p>
                 </article>
                 <article className="status-summary-card">
@@ -465,7 +468,7 @@ function App() {
                       <h3>Top items to clear now</h3>
                     </div>
 
-                    {waitingCount > 0 ? (
+                    {openCount > 0 ? (
                       <button
                         type="button"
                         className="secondary-link-button"
@@ -492,9 +495,7 @@ function App() {
                               <span
                                 className={`status-pill status-${review.status}`}
                               >
-                                {review.status === "flagged"
-                                  ? "owner call"
-                                  : "waiting"}
+                                {getReviewStatusLabel(review)}
                               </span>
                             </div>
                             <strong>{review.author}</strong>
@@ -571,7 +572,7 @@ function App() {
                       <span className="queue-checkmark" aria-hidden="true">
                         ✓
                       </span>
-                      <p>Nothing is waiting in the live queue.</p>
+                      <p>Nothing is open in the live queue.</p>
                     </div>
                   )}
                 </aside>
@@ -580,10 +581,10 @@ function App() {
                   <div className="panel-header">
                     <div>
                       <span className="eyebrow-label">Portfolio queue</span>
-                      <h3>Reviews waiting across live locations</h3>
+                      <h3>Reviews open across live locations</h3>
                     </div>
                     <span className="panel-meta-label">
-                      {waitingCount > 0 ? `${waitingCount} open items` : "0 open items"}
+                      {openCount > 0 ? `${openCount} open items` : "0 open items"}
                     </span>
                   </div>
 
@@ -610,9 +611,7 @@ function App() {
                               <span
                                 className={`status-pill status-${review.status}`}
                               >
-                                {review.status === "flagged"
-                                  ? "owner call"
-                                  : "waiting"}
+                                {getReviewStatusLabel(review)}
                               </span>
                             </div>
 
@@ -645,7 +644,9 @@ function App() {
                                   className="action-button"
                                   onClick={() => handleFlagReview(review.id)}
                                 >
-                                  Escalate to owner call
+                                  {review.status === "flagged"
+                                    ? "Owner call flagged"
+                                    : "Escalate to owner call"}
                                 </button>
                               )}
                             </div>
@@ -660,8 +661,8 @@ function App() {
                       </span>
                       <strong>You're all caught up.</strong>
                       <p>
-                        Every live review has either been answered or flagged for the
-                        right owner follow-up.
+                        Every live review is either answered or already covered by the
+                        current reply rules.
                       </p>
                     </article>
                   )}
@@ -689,7 +690,7 @@ function App() {
                     <span className="eyebrow-label">Live locations</span>
                     <h3>Open queues</h3>
                   </div>
-                  <p>{waitingCount} reviews still need action tonight.</p>
+                  <p>{openCount} reviews still need action tonight.</p>
                 </div>
 
                 <div className="location-grid">
@@ -771,7 +772,7 @@ function App() {
               <div className="banner-score">
                 {activeLocation.status === "live" ? (
                   <>
-                    <strong>{activeLocationQueueCount} waiting</strong>
+                    <strong>{activeLocationOpenCount} open</strong>
                     <span>
                       {activeLocation.ratingLabel} · +{activeLocation.reviewsThisWeek} this
                       week,{" "}

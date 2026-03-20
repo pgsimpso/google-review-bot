@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -100,5 +100,28 @@ describe("App responsive workflow", () => {
     expect(
       screen.getAllByRole("button", { name: /escalate to owner call/i }).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("uses open queue labels and keeps low-star reviews in owner-call status", () => {
+    mockMatchMedia(false);
+    render(<App />);
+
+    expect(screen.getAllByText("Open now").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Waiting now")).not.toBeInTheDocument();
+
+    const lunchReview = screen
+      .getAllByText("Lunch guest")
+      .map((node) => node.closest("article"))
+      .find((article) => article?.textContent?.includes("owner call"));
+    const sportsReview = screen
+      .getAllByText("Sports fan")
+      .map((node) => node.closest("article"))
+      .find((article) => article?.textContent?.includes("draft ready"));
+
+    expect(lunchReview).not.toBeNull();
+    expect(sportsReview).not.toBeNull();
+
+    expect(within(lunchReview as HTMLElement).getByText("owner call")).toBeInTheDocument();
+    expect(within(sportsReview as HTMLElement).getByText("draft ready")).toBeInTheDocument();
   });
 });
