@@ -16,7 +16,7 @@ export const demoCopy: DemoCopy = {
     kicker: "Jay Trikha Restaurant Group",
     title: "Reputation Dashboard",
     summary:
-      "One live venue, three 2026 launches, and a single view of review volume, response pressure, and launch readiness.",
+      "Two live venues, two 2026 launches, and a single view of review volume, response pressure, and launch readiness.",
     primaryCtaLabel: "Open Savannah Taphouse",
     primaryCtaHref: "#workspace",
     secondaryCtaLabel: "Open Launch Queue",
@@ -29,32 +29,32 @@ export const demoCopy: DemoCopy = {
     {
       label: "Total locations",
       value: "4",
-      detail: "Savannah live, three venues in launch mode",
+      detail: "Two live venues and two venues in launch mode",
     },
     {
       label: "Live public reviews",
-      value: "2,738",
-      detail: "Current Google footprint at Savannah Taphouse",
+      value: "2,784",
+      detail: "Across Savannah Taphouse and Pritchard & Co.",
     },
     {
       label: "Portfolio rating",
       value: "4.2 / 5",
-      detail: "Current live rating before the 2026 openings",
+      detail: "Weighted by current review volume across the two live listings",
     },
     {
       label: "Launch-mode venues",
-      value: "3",
+      value: "2",
       detail: "Public review count starts at zero for each opening",
     },
     {
       label: "Launch tasks complete",
-      value: "4 / 12",
-      detail: "Shared readiness board across the 2026 openings",
+      value: "2 / 8",
+      detail: "Shared readiness board across Nico Angelo's and Elsewhere",
     },
   ],
   overviewTitle: "Portfolio overview",
   overviewBody:
-    "Savannah Taphouse is the live listing. Pritchard & Co., Nico Angelo's, and Elsewhere enter 2026 with no public review history yet.",
+    "Savannah Taphouse and Pritchard & Co. are live. Nico Angelo's and Elsewhere still need their first review runway before opening.",
   dashboardTitle: "Active workspace",
   dashboardBody:
     "Select a venue from the portfolio. Live locations open the review queue. Launching venues open their checklist and first-review runway.",
@@ -97,21 +97,21 @@ export const locations: LocationSummary[] = [
     name: "Pritchard & Co.",
     shortName: "Pritchard",
     address: "207 W. Broughton St, Savannah, GA",
-    status: "coming-soon",
-    ratingLabel: "Launching Q2 2026",
-    reviewCountLabel: "0 public reviews",
-    trend: "flat",
-    trendChipLabel: "launching",
-    trendLabel: "No review history yet",
-    sparkline: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    status: "live",
+    rating: 4.7,
+    ratingLabel: "4.7 / 5",
+    reviewCountLabel: "46 Google reviews",
+    trend: "up",
+    trendChipLabel: "new",
+    trendLabel: "Strong early momentum on a still-thin review base",
+    sparkline: [3, 4, 6, 8, 10, 13, 16, 20, 26, 31, 38, 46],
     focusBlurb:
-      "Opening-year concept with no public review history yet. First-page social proof has to be staged before opening week.",
+      "A newly live location with a strong early rating. The opportunity is to protect and compound that first page of reviews.",
     detailNote:
-      "Launch mode tracks profile setup, request templates, and the first wave of review outreach before doors open.",
-    sourceLabel: "Launch mode",
-    linkLabel: "Open launch workspace",
+      "Live rating and review count are the anchor. Queue state, theme buckets, and reply drafts are shown as working demo data.",
+    sourceLabel: "Live listing",
+    linkLabel: "Open review workspace",
     linkUrl: "#workspace",
-    openingLabel: "Launch Queue",
   },
   {
     id: "nico-angelos",
@@ -218,6 +218,48 @@ export const reviews: ReviewItem[] = [
       "Chris, appreciate you coming back in. Busy nights still have to feel buttoned up from the guest side, so I am glad the team delivered for you.",
     tags: ["repeat guest", "beer list"],
   },
+  {
+    id: "pritchard-r1",
+    locationId: "pritchard-and-co",
+    author: "Megan S.",
+    stars: 5,
+    dateLabel: "Mar 19, 9:08 AM",
+    sentiment: "positive",
+    status: "responded",
+    snippet:
+      "Beautiful space, great coffee, and the pastries were excellent. Feels polished already.",
+    aiResponse:
+      "Megan, thank you for spending the morning with us. We are still early in the life of Pritchard & Co., so hearing that the room already feels polished means a lot to the team.",
+    tags: ["coffee", "pastries"],
+  },
+  {
+    id: "pritchard-r2",
+    locationId: "pritchard-and-co",
+    author: "Daniel T.",
+    stars: 4,
+    dateLabel: "Mar 18, 12:21 PM",
+    sentiment: "mixed",
+    status: "pending",
+    snippet:
+      "Sandwich was very good and the room looks great, but the line moved slower than expected at lunch rush.",
+    aiResponse:
+      "Daniel, appreciate the note. We are glad the sandwich and the room landed, and we are tightening our lunch handoff so the line moves more cleanly during the rush window.",
+    tags: ["lunch rush", "counter speed"],
+  },
+  {
+    id: "pritchard-r3",
+    locationId: "pritchard-and-co",
+    author: "Alicia R.",
+    stars: 3,
+    dateLabel: "Mar 17, 8:54 AM",
+    sentiment: "mixed",
+    status: "flagged",
+    snippet:
+      "Coffee was good, but there was a long wait for a simple order and seating filled up quickly.",
+    aiResponse:
+      "Alicia, thanks for the direct feedback. A simple morning order should not take that long, and we are reviewing both line pacing and seating flow with the opening team.",
+    tags: ["morning rush", "seating"],
+  },
 ];
 
 export const themeCategories: ThemeCategory[] = [
@@ -241,6 +283,27 @@ export const themeCategories: ThemeCategory[] = [
     label: "Atmosphere: cold / loud",
     value: 11,
     tone: "watch",
+  },
+  {
+    id: "pritchard-theme-1",
+    locationId: "pritchard-and-co",
+    label: "Morning rush wait",
+    value: 7,
+    tone: "watch",
+  },
+  {
+    id: "pritchard-theme-2",
+    locationId: "pritchard-and-co",
+    label: "Counter handoff speed",
+    value: 5,
+    tone: "watch",
+  },
+  {
+    id: "pritchard-theme-3",
+    locationId: "pritchard-and-co",
+    label: "Seating availability",
+    value: 3,
+    tone: "stable",
   },
 ];
 
@@ -277,45 +340,41 @@ export const automationMetrics: AutomationMetric[] = [
     sublabel: "Average time to first reply draft after a review lands",
     progress: 0.84,
   },
-];
-
-export const launchMilestones: LaunchMilestone[] = [
   {
     id: "pritchard-m1",
     locationId: "pritchard-and-co",
-    label: "Claim Google Business Profile",
-    detail: "Lock categories, hours, and opening message before first service.",
-    owner: "Arcadian",
-    dueLabel: "Due now",
-    complete: true,
+    label: "Review requests sent",
+    value: "18",
+    sublabel: "Recent cafe follow-ups sent after orders and opening-week visits",
+    progress: 0.5,
   },
   {
     id: "pritchard-m2",
     locationId: "pritchard-and-co",
-    label: "Load opening-week request templates",
-    detail: "Reservation follow-up and first-visit review asks staged for launch.",
-    owner: "Arcadian",
-    dueLabel: "Due this week",
-    complete: true,
+    label: "Messages opened",
+    value: "11",
+    sublabel: "Guests who opened the request during the latest send window",
+    progress: 0.61,
   },
   {
     id: "pritchard-m3",
     locationId: "pritchard-and-co",
-    label: "Approve opening response tone",
-    detail: "Lock response style before first reviews begin to land.",
-    owner: "Jay + ops",
-    dueLabel: "Pre-open",
-    complete: false,
+    label: "New reviews generated",
+    value: "5",
+    sublabel: "Fresh public reviews attributed to current follow-up traffic",
+    progress: 0.42,
   },
   {
     id: "pritchard-m4",
     locationId: "pritchard-and-co",
-    label: "Stage first 25 guest list",
-    detail: "Identify preview guests and early regulars for the first review runway.",
-    owner: "Venue team",
-    dueLabel: "Pre-open",
-    complete: false,
+    label: "Average draft time",
+    value: "9 min",
+    sublabel: "Average time to first reply draft after a review posts",
+    progress: 0.88,
   },
+];
+
+export const launchMilestones: LaunchMilestone[] = [
   {
     id: "nico-m1",
     locationId: "nico-angelos",
