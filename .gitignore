@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+repautopilot.md
+taphouse.md
