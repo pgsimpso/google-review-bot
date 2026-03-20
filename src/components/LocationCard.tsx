@@ -19,6 +19,7 @@ export function LocationCard({
   onSelect,
 }: LocationCardProps) {
   const trend = trendMeta[location.trend];
+  const chipLabel = location.trendChipLabel ?? trend.label;
 
   return (
     <button
@@ -32,8 +33,8 @@ export function LocationCard({
       <div className="location-card-topline">
         <span className="eyebrow-label">{location.sourceLabel}</span>
         <span className={`trend-chip trend-${location.trend}`}>
-          <span aria-hidden="true">{trend.arrow}</span>
-          {trend.label}
+          {location.status === "live" ? <span aria-hidden="true">{trend.arrow}</span> : null}
+          {chipLabel}
         </span>
       </div>
 

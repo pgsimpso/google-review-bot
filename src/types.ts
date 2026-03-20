@@ -61,6 +61,7 @@ export interface LocationSummary {
   ratingLabel: string;
   reviewCountLabel: string;
   trend: TrendDirection;
+  trendChipLabel?: string;
   trendLabel: string;
   sparkline: number[];
   focusBlurb: string;
